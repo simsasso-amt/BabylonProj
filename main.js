@@ -21,7 +21,7 @@ const createScene = async function() {
     // Carichiamo il file GLB/GLTF
     await BABYLON.SceneLoader.AppendAsync(
         "./",        // cartella
-        "scene.gbl", // nome del file
+        "scene.glb", // nome del file
         scene
     );
 
