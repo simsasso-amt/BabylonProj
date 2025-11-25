@@ -37,6 +37,52 @@ const createScene = async function() {
     sediaRoot.scaling = new BABYLON.Vector3(0.8, 0.8, 0.8);
     sediaRoot.rotation = new BABYLON.Vector3(0, Math.PI / 2, 0);
 
+    // Rendo tutti i mesh della sedia "selezionabili"
+    sediaResult.meshes.forEach(m => {
+        if (!m.metadata) m.metadata = {};
+        m.metadata.selectable = true;
+        m.metadata.root = sediaRoot; // così se clicchi un pezzo, risaliamo al root
+    });
+
+    // 🔍 Funzione per selezionare un oggetto (sedia)
+    function selectRoot(rootMesh) {
+        // rimuovi highlight/drag da eventuale selezione precedente
+        if (selectedRoot) {
+            hl.removeAllMeshes();
+            selectedRoot.removeBehavior(dragBehavior);
+        }
+
+        selectedRoot = rootMesh;
+        if (selectedRoot) {
+            hl.addMesh(selectedRoot, BABYLON.Color3.Yellow());
+            selectedRoot.addBehavior(dragBehavior);
+        }
+    }
+
+    // 🖱 Gestione click del mouse
+    scene.onPointerObservable.add(pointerInfo => {
+        switch (pointerInfo.type) {
+            case BABYLON.PointerEventTypes.POINTERDOWN:
+                const pick = pointerInfo.pickInfo;
+                if (pick && pick.hit && pick.pickedMesh) {
+                    const mesh = pick.pickedMesh;
+
+                    // Se il mesh ha metadata.selectable, prendiamo il suo root
+                    if (mesh.metadata && mesh.metadata.selectable) {
+                        const root = mesh.metadata.root || mesh;
+                        selectRoot(root);
+                    } else {
+                        // clic su vuoto o oggetto non selezionabile → deseleziona
+                        selectRoot(null);
+                    }
+                } else {
+                    // clic nel vuoto
+                    selectRoot(null);
+                }
+                break;
+        }
+    });
+
     return scene;
 };
 
