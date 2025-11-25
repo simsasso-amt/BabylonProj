@@ -4,7 +4,7 @@ const engine = new BABYLON.Engine(canvas, true);
 const createScene = async function () {
     const scene = new BABYLON.Scene(engine);
 
-    // Camera
+    // Camera orbitale
     const camera = new BABYLON.ArcRotateCamera(
         "camera",
         Math.PI / 2,
@@ -22,21 +22,52 @@ const createScene = async function () {
         scene
     );
 
-    // Highlight layer per evidenziare la sedia selezionata
+    // Highlight layer
     const hl = new BABYLON.HighlightLayer("hl1", scene);
 
-    // 🔹 Variabile di selezione (DEVE stare QUI, prima di selectRoot)
     let selectedRoot = null;
 
-    // Comportamento di drag su piano orizzontale (X/Z)
+    // Drag su piano XZ
     const dragBehavior = new BABYLON.PointerDragBehavior({
         dragPlaneNormal: new BABYLON.Vector3(0, 1, 0)
     });
     dragBehavior.moveAttached = true;
 
-    // 🔹 Funzione che usa selectedRoot
+    // 1) Carica l’ambiente (scene.gbl)
+    const spaceResult = await BABYLON.SceneLoader.ImportMeshAsync(
+        "",
+        "./",
+        "scene.gbl",
+        scene
+    );
+
+    // Rendo l’ambiente NON cliccabile
+    spaceResult.meshes.forEach(m => {
+        m.isPickable = false;
+    });
+
+    // 2) Carica la sedia
+    const sediaResult = await BABYLON.SceneLoader.ImportMeshAsync(
+        "",
+        "./",
+        "sedia.glb",
+        scene
+    );
+
+    const sediaRoot = sediaResult.meshes[0];
+    sediaRoot.name = "sediaRoot";
+    sediaRoot.position = new BABYLON.Vector3(1, 0, 2);
+    sediaRoot.scaling = new BABYLON.Vector3(0.8, 0.8, 0.8);
+
+    // Rendo la sedia selezionabile
+    sediaResult.meshes.forEach(m => {
+        if (!m.metadata) m.metadata = {};
+        m.metadata.selectable = true;
+        m.metadata.root = sediaRoot;
+    });
+
+    // Funzione di selezione
     function selectRoot(rootMesh) {
-        // rimuovi highlight/drag da eventuale selezione precedente
         if (selectedRoot) {
             hl.removeAllMeshes();
             selectedRoot.removeBehavior(dragBehavior);
@@ -45,62 +76,39 @@ const createScene = async function () {
         selectedRoot = rootMesh;
 
         if (selectedRoot) {
+            console.log("Selezionato:", selectedRoot.name);
             hl.addMesh(selectedRoot, BABYLON.Color3.Yellow());
             selectedRoot.addBehavior(dragBehavior);
+        } else {
+            console.log("Nessun oggetto selezionato");
         }
     }
 
-    // ****************************
-    // Caricamento modello spazio
-    // ****************************
-    await BABYLON.SceneLoader.AppendAsync("./", "scene.glb", scene);
+    // Click del mouse
+    scene.onPointerDown = function (evt, pickResult) {
+        if (pickResult.hit && pickResult.pickedMesh) {
+            const mesh = pickResult.pickedMesh;
+            console.log("Hai cliccato:", mesh.name);
 
-    // ****************************
-    // Caricamento sedia
-    // ****************************
-    const sediaResult = await BABYLON.SceneLoader.ImportMeshAsync(
-        "",
-        "./",
-        "sedia.glb",
-        scene
-    );
-    const sediaRoot = sediaResult.meshes[0];
-    sediaRoot.name = "sediaRoot";
-    sediaRoot.position = new BABYLON.Vector3(1, 0, 2);
-    sediaRoot.scaling = new BABYLON.Vector3(0.8, 0.8, 0.8);
-
-    sediaResult.meshes.forEach(m => {
-        if (!m.metadata) m.metadata = {};
-        m.metadata.selectable = true;
-        m.metadata.root = sediaRoot;
-    });
-
-    // 🖱 Gestione click
-    scene.onPointerObservable.add(pointerInfo => {
-        switch (pointerInfo.type) {
-            case BABYLON.PointerEventTypes.POINTERDOWN:
-                const pick = pointerInfo.pickInfo;
-                if (pick && pick.hit && pick.pickedMesh) {
-                    const mesh = pick.pickedMesh;
-
-                    if (mesh.metadata && mesh.metadata.selectable) {
-                        const root = mesh.metadata.root || mesh;
-                        selectRoot(root);
-                    } else {
-                        selectRoot(null);
-                    }
-                } else {
-                    selectRoot(null);
-                }
-                break;
+            if (mesh.metadata && mesh.metadata.selectable) {
+                selectRoot(mesh.metadata.root);
+            } else {
+                selectRoot(null);
+            }
+        } else {
+            selectRoot(null);
         }
-    });
+    };
 
     return scene;
 };
 
 createScene().then(scene => {
-    engine.runRenderLoop(() => scene.render());
+    engine.runRenderLoop(() => {
+        scene.render();
+    });
 });
 
-window.addEventListener("resize", () => engine.resize());
+window.addEventListener("resize", () => {
+    engine.resize();
+});
