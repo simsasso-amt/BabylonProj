@@ -25,6 +25,18 @@ const createScene = async function() {
         scene
     );
 
+    // 2) Carico una sedia
+    const sediaResult = await BABYLON.SceneLoader.ImportMeshAsync(
+        "",        // nome dei mesh (vuoto = tutti)
+        "./",      // path
+        "sedia.glb",
+        scene
+    );
+    const sediaRoot = sediaResult.meshes[0];
+    sediaRoot.position = new BABYLON.Vector3(1, 0, 2);
+    sediaRoot.scaling = new BABYLON.Vector3(0.8, 0.8, 0.8);
+    sediaRoot.rotation = new BABYLON.Vector3(0, Math.PI / 2, 0);
+
     return scene;
 };
 
