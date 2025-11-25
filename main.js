@@ -53,7 +53,7 @@ const createScene = async function () {
     // ****************************
     // Caricamento modello spazio
     // ****************************
-    await BABYLON.SceneLoader.AppendAsync("./", "space.glb", scene);
+    await BABYLON.SceneLoader.AppendAsync("./", "scene.glb", scene);
 
     // ****************************
     // Caricamento sedia
