@@ -37,7 +37,7 @@ const createScene = async function () {
     const spaceResult = await BABYLON.SceneLoader.ImportMeshAsync(
         "",
         "./",
-        "scene.gbl",
+        "scene.glb",
         scene
     );
 
